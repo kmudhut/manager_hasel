@@ -7,6 +7,7 @@
 #include <ctime>
 #include <cstdlib>
 #include <random>
+#include <filesystem>
 
 using namespace std;
 
@@ -24,6 +25,11 @@ struct Tekran {
             string((width - string(u8"MANAGER HASEŁ (tworzenie nowej bazy)").size()) / 2, '=') +
             u8" MANAGER HASEŁ (tworzenie nowej bazy) " + string(
                 (width - string(u8"MANAGER HASEŁ (tworzenie nowej bazy)").size()) / 2, '=')
+        },
+        {
+            string((width - string(u8"MANAGER HASEŁ (lista zapisanych baz)").size()) / 2, '=') +
+            u8" MANAGER HASEŁ (lista zapisanych baz) " + string(
+                (width - string(u8"MANAGER HASEŁ (lista zapisanych baz)").size()) / 2, '=')
         }
     };
     string* ekran = nullptr;
@@ -108,9 +114,11 @@ struct TBaza_Hasel {
 
                 cout << endl << "\t\tZnaki specjalne? [t/n]:";
                 while ((c = getch()) != 't' && c != 'n');
-                bool special_characters = ((c == 't')?true : false);
+                bool special_characters = ((c == 't') ? true : false);
 
-                cout << "\n\tHasło:" << (tmp[2] = generate_password(length, upper_case, lower_case, digits, special_characters));
+                cout << "\n\tHasło:" << (tmp[2] = generate_password(length, upper_case, lower_case, digits,
+                                                                    special_characters));
+                cin.get();
             }
 
 
@@ -155,7 +163,8 @@ struct TBaza_Hasel {
         return decrypted_line;
     }
 
-    static string generate_password(int length, bool upper_case, bool lower_case, bool digits, bool special_characters) {
+    static string generate_password(int length, bool upper_case, bool lower_case, bool digits,
+                                    bool special_characters) {
         vector<char> charset;
         string generated_password;
         if (upper_case) {
@@ -182,10 +191,10 @@ struct TBaza_Hasel {
             }
         }
 
-        for(int i = 0; i<length; ++i) {
+        for (int i = 0; i < length; ++i) {
             random_device rd;
             mt19937 mt(rd());
-            uniform_int_distribution<int> random(0, charset.size()-1);
+            uniform_int_distribution<int> random(0, charset.size() - 1);
             generated_password.push_back(charset.at(random(mt)));
         }
 
@@ -196,7 +205,13 @@ struct TBaza_Hasel {
         ofstream plik;
         plik.open(name + ".mudhut");
         plik << encrypt_line(name) << endl;
-        plik << encrypt_line(password);
+        plik << encrypt_line(password) << endl;
+        plik << encrypt_line(to_string(data.size())) << endl;
+        for (const auto&wpis: data) {
+            for (const auto&elem: wpis) {
+                plik << encrypt_line(elem) << endl;
+            }
+        }
         plik.close();
     }
 
@@ -207,15 +222,42 @@ struct TBaza_Hasel {
         getline(plik, tmp);
         name = decrypt_line(tmp);
         getline(plik, tmp);
+
         password = decrypt_line(tmp);
+        getline(plik, tmp);
+        unsigned long long amount_of_records = stoull(decrypt_line(tmp));
+        for (unsigned long long i = 0; i < amount_of_records; ++i) {
+            vector<string> record;
+            for (int j = 0; j < 3; ++j) {
+                getline(plik, tmp);
+                record.push_back(decrypt_line(tmp));
+            }
+            data.push_back(record);
+        }
+        plik.close();
     }
+
+    void display_data_base() {
+        string password_passed_by_user;
+        do {
+            system("cls");
+            cout<<"Wprowadź hasło do bazy danych:";
+            getline(cin,password_passed_by_user);
+        }while(password_passed_by_user != password);
+        system("cls");
+        cout<<"BAZA HASEŁ: "<< name << endl << "Wciśnij [ESC] by powrócić do menu głównego." << endl << endl;
+        for(const auto record:data) {
+            cout<<record[0]<<endl;
+            cout<<"\tLogin: "<<record[1]<<endl;
+            cout<<"\tHasło: "<<record[2]<<endl;
+        }
+        while(getch()!=27);
+    }
+
 };
 
-int main() {
-    //TBaza_Hasel A =TBaza_Hasel("sluzbowa.mudhut");
-    // cout<<A.password;
-    // cin.get();
 
+int main() {
     srand(time(nullptr));
     Tekran e;
     vector<TBaza_Hasel> databases;
@@ -226,9 +268,67 @@ int main() {
         int c = getch();
         if (c == 13) {
             if (wybor_menu == 3) exit(0);
-            e.switch_view(1);
-            databases.push_back(TBaza_Hasel{});
-            e.switch_view(0);
+            if (wybor_menu == 1) {
+                vector<string> file_list;
+                for (const auto&entry: std::filesystem::directory_iterator("./"))
+                    if (entry.path().extension() == ".mudhut") {
+                        string path = entry.path().u8string().erase(0, 2);
+                        file_list.push_back(path);
+                    }
+                if (file_list.size()) {
+                    e.views[2].erase(e.views[2].begin()+1,e.views[2].end());
+                    for (int i = 0; i<file_list.size(); ++i) {
+                        if(i==0) {
+                            e.views[2].push_back("→ " + file_list[i]);
+                            continue;
+                        }
+                        e.views[2].push_back("  " + file_list[i]);
+                    }
+                        e.switch_view(2);
+                        int c;
+                        unsigned long long wybor_menu = 1;
+                        while ((c = getch()) != 13 && c != 27) {
+                            switch (c) {
+                                case 80:
+                                    if (wybor_menu < file_list.size()) {
+                                        e.ekran[wybor_menu].erase(0, 3);
+                                        e.ekran[wybor_menu].insert(0, " ");
+                                        wybor_menu++;
+                                        e.ekran[wybor_menu].erase(0, 1);
+                                        e.ekran[wybor_menu].insert(0, u8"→");
+                                        e.render(e.ekran_size);
+                                    }
+                                    break;
+                                case 72:
+                                    if (wybor_menu > 1) {
+                                        e.ekran[wybor_menu].erase(0, 3);
+                                        e.ekran[wybor_menu].insert(0, " ");
+                                        wybor_menu--;
+                                        e.ekran[wybor_menu].erase(0, 1);
+                                        e.ekran[wybor_menu].insert(0, u8"→");
+                                        e.render(e.ekran_size);
+                                    }
+                                    break;
+                            }
+                        }
+                        if(c == 13) {
+                            TBaza_Hasel db{file_list[wybor_menu-1]};
+                            db.display_data_base();
+                        }
+                        e.switch_view(0);
+                    }
+                else {
+                    e.views[2].push_back("Brak elementów w bazie so far :/");
+                    e.switch_view(2);
+                }
+                wybor_menu = 1;
+            }
+            else {
+                e.switch_view(1);
+                databases.push_back(TBaza_Hasel{});
+                e.switch_view(0);
+                wybor_menu = 1;
+            }
         }
         switch (c) {
             case 80:
