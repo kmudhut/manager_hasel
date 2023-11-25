@@ -2,7 +2,6 @@
 #include <conio.h>
 #include <string>
 #include <vector>
-#include <ctime>
 #include <cstdlib>
 #include <filesystem>
 #include "Tekran.h"
@@ -112,8 +111,12 @@ void opening_existing_db(int* menu_option, Tekran* screen, vector<TBaza_Hasel>* 
             screen->switch_view(0);
         }
         else {
-            screen->views[2].push_back("Brak elementów w bazie so far :/");
+
+            screen->views[2].push_back("Nie znaleziono żadnych zapisanych baz w katalogu, w którym znajduje się program.");
             screen->switch_view(2);
+            cin.get();
+            screen->views[2].pop_back();
+            screen->switch_view(0);
         }
         *menu_option = 1;
     }
