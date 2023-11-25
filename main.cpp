@@ -72,6 +72,15 @@ struct TBaza_Hasel {
         string new_database_password;
         int c;
         while ((c = getch()) != 13) {
+            if(c<32) {
+                if(c==8 && new_database_password[0]) {
+                    new_database_password.pop_back();
+                    putch('\b');
+                    putch(' ');
+                    putch('\b');
+                }
+             continue;
+            }
             putch('*');
             new_database_password.push_back(c);
         }
@@ -242,7 +251,21 @@ struct TBaza_Hasel {
         do {
             system("cls");
             cout<<"Wprowadź hasło do bazy danych:";
-            getline(cin,password_passed_by_user);
+            password_passed_by_user.clear();
+            int c;
+            while ((c = getch()) != 13) {
+                if(c<32) {
+                    if(c==8 && password_passed_by_user[0]) {
+                        password_passed_by_user.pop_back();
+                        putch('\b');
+                        putch(' ');
+                        putch('\b');
+                    }
+                    continue;
+                }
+                putch('*');
+                password_passed_by_user.push_back(c);
+            }
         }while(password_passed_by_user != password);
         system("cls");
         cout<<"BAZA HASEŁ: "<< name << endl << "Wciśnij [ESC] by powrócić do menu głównego." << endl << endl;
