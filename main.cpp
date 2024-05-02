@@ -2,10 +2,10 @@
 #include <conio.h>
 #include <string>
 #include <vector>
-#include <cstdlib>
 #include <filesystem>
 #include "Tekran.h"
 #include "TBaza_Hasel.h"
+#include "TBlad.h"
 
 using namespace std;
 
@@ -105,8 +105,19 @@ void opening_existing_db(int* menu_option, Tekran* screen, vector<TBaza_Hasel>* 
                 }
             }
             if (c == 13) {
-                TBaza_Hasel db{file_list[wybor_menu - 1]};
-                db.display_data_base();
+                try{
+                    TBaza_Hasel db{file_list[wybor_menu - 1]};
+                    db.display_data_base();
+                }
+
+                catch(TBlad_OtwarciaPliku err){
+                    TBlad & error = err;
+                    error.write_error_info();
+                    cin.get();
+                    if(error.get_error_seriousness() == critical) exit(error.get_error_code());
+                }
+
+
             }
             screen->switch_view(0);
         }
@@ -124,7 +135,21 @@ void opening_existing_db(int* menu_option, Tekran* screen, vector<TBaza_Hasel>* 
 
 void creating_new_db(int* menu_option, Tekran* screen, vector<TBaza_Hasel>* databases) {
     screen->switch_view(1);
-    databases->push_back(TBaza_Hasel{});
+    try{
+        databases->push_back(TBaza_Hasel{});
+    }
+    catch(TBlad_ZakazanaNazwa err)
+    {
+        TBlad & error = err;
+        error.write_error_info();
+        cin.get();
+        if(error.get_error_seriousness() == critical) exit(error.get_error_code());
+        else{
+            cout<<"\nMożesz spróbować utworzyć bazę jeszcze raz, ale to ostatnia szansa:\n";
+            databases->push_back(TBaza_Hasel{});
+        }
+    }
+
     screen->switch_view(0);
     *menu_option = 1;
 }

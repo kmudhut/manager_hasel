@@ -8,4 +8,7 @@ add_executable(manager_hasel main.cpp
         Tekran.h
         TBaza_Hasel.cpp
         TBaza_Hasel.h
+        TBlad.cpp
+        TBlad.h
 )
+

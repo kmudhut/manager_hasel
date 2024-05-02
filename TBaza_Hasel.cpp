@@ -5,6 +5,7 @@
 #include <conio.h>
 #include <fstream>
 #include <random>
+#include "TBlad.h"
 
 using namespace std;
 
@@ -12,6 +13,10 @@ TBaza_Hasel::TBaza_Hasel() {
     cout << "Podaj nazwę nowej bazy haseł:";
     string new_database_name;
     cin >> new_database_name;
+    if(new_database_name == "dupa"){
+        throw TBlad_ZakazanaNazwa(new_database_name);
+    }
+
     name = new_database_name;
     cout << "Utwórz hasło nowej bazy:";
     string new_database_password;
@@ -161,6 +166,9 @@ string TBaza_Hasel::generate_password(int length, bool upper_case, bool lower_ca
 void TBaza_Hasel::export_data_base_to_file() const {
     ofstream plik;
     plik.open(name + ".mudhut");
+    if(!(plik.is_open())){
+        throw TBlad_OtwarciaPliku(name);
+    }
     plik << encrypt_line(name) << endl;
     plik << encrypt_line(password) << endl;
     plik << encrypt_line(to_string(data.size())) << endl;
@@ -175,6 +183,9 @@ void TBaza_Hasel::export_data_base_to_file() const {
 void TBaza_Hasel::import_data_base_from_file(string filename) {
     ifstream plik;
     plik.open(filename);
+    if(!(plik.is_open())){
+        throw TBlad_OtwarciaPliku(filename);
+    }
     string tmp;
     getline(plik, tmp);
     name = decrypt_line(tmp);
